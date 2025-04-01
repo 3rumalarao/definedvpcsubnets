@@ -3,6 +3,16 @@ output "compute_instances" {
   value       = module.compute.instances
 }
 
+output "application_instances" {
+  description = "Mapping of application name to list of instance IDs"
+  value       = module.compute.application_instances
+}
+
+output "alb_dns_names" {
+  description = "Mapping of application name to ALB DNS names"
+  value       = module.alb.alb_dns_names
+}
+
 output "efs_id" {
   description = "EFS file system ID"
   value       = module.efs.efs_id
