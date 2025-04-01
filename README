@@ -1,0 +1,32 @@
+terraform-project/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── terraform.tfvars
+├── security_groups.auto.tfvars
+├── environments/                # (Optional: Environment-specific variables)
+│   ├── dev.tfvars
+│   ├── qa.tfvars
+│   ├── uat.tfvars
+│   └── prod.tfvars
+└── modules/
+    ├── compute/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── efs/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── rds/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── backup/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    └── sg/
+        ├── main.tf
+        ├── variables.tf
+        └── outputs.tf
