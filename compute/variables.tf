@@ -62,7 +62,6 @@ variable "common_tags" {
   type        = map(string)
 }
 
-# Renamed variable to reflect latest naming conventions.
 variable "vpc_security_group_ids" {
   description = "Mapping of security group names to their IDs"
   type        = map(string)
