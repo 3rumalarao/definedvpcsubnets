@@ -1,5 +1,5 @@
 output "compute_instances" {
-  description = "All compute instances created"
+  description = "All compute instances created (flattened map)"
   value       = module.compute.instances
 }
 
