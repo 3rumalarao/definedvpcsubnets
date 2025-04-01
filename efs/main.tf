@@ -14,3 +14,4 @@ resource "aws_efs_mount_target" "this" {
   subnet_id       = each.value
   security_groups = var.efs_security_groups
 }
+ 
