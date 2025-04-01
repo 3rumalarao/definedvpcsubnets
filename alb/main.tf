@@ -1,4 +1,4 @@
-# Create an internal ALB for each application
+# Create an internal ALB for each application (using the keys of var.applications)
 resource "aws_lb" "this" {
   for_each = var.applications
 
@@ -38,27 +38,23 @@ resource "aws_lb_target_group" "this" {
   })
 }
 
-# Create a listener for each ALB
-resource "aws_lb_listener" "this" {
-  for_each = aws_lb.this
-
-  load_balancer_arn = each.value.arn
-  port              = var.app_port
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.this[each.key].arn
-  }
+locals {
+  # Flatten the application instances mapping into a list of attachments.
+  attachment_targets = flatten([
+    for app, ids in var.app_instance_ids : [
+      for id in ids : {
+        app_name    = app,
+        instance_id = id
+      }
+    ]
+  ])
 }
 
-# Attach each application instance as a target in the corresponding target group
+# Attach each application instance to its target group.
 resource "aws_lb_target_group_attachment" "this" {
-  for_each = var.applications
+  for_each = { for t in local.attachment_targets : "${t.app_name}-${t.instance_id}" => t }
 
-  count = length(var.app_instance_ids[each.key])
-
-  target_group_arn = aws_lb_target_group.this[each.key].arn
-  target_id        = var.app_instance_ids[each.key][count.index]
+  target_group_arn = aws_lb_target_group.this[each.value.app_name].arn
+  target_id        = each.value.instance_id
   port             = var.app_port
 }
