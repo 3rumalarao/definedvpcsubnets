@@ -4,7 +4,7 @@ variable "vpc_id" {
 }
 
 variable "subnets" {
-  description = "Subnets for the ALB (should be private subnets for internal ALB)"
+  description = "Subnets for the ALB (should be private for internal ALB)"
   type        = list(string)
 }
 
@@ -15,8 +15,9 @@ variable "applications" {
   }))
 }
 
+# Mapping of application name to list of instance IDs from the compute module.
 variable "app_instance_ids" {
-  description = "Mapping of application name to list of instance IDs from compute module"
+  description = "Mapping of application name to list of instance IDs"
   type        = map(list(string))
 }
 
@@ -26,7 +27,7 @@ variable "alb_security_group_ids" {
 }
 
 variable "app_port" {
-  description = "Port on which the application is running (and ALB listens on)"
+  description = "Port on which the application is running and ALB listens"
   type        = number
   default     = 80
 }
