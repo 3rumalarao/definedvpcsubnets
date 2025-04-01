@@ -55,3 +55,4 @@ resource "aws_instance" "public_instances" {
     Type = "Public"
   })
 }
+ 
