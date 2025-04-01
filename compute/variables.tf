@@ -62,6 +62,7 @@ variable "common_tags" {
   type        = map(string)
 }
 
+# Mapping of security group names to IDs passed from the SG module.
 variable "vpc_security_group_ids" {
   description = "Mapping of security group names to their IDs"
   type        = map(string)
