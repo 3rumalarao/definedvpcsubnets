@@ -37,14 +37,14 @@ module "compute" {
 
 # ALB Module for Application Servers
 module "alb" {
-  source                  = "./modules/alb"
-  vpc_id                  = var.vpc_id
-  subnets                 = var.private_subnets    # ALB is internal so use private subnets
-  applications            = var.applications
-  app_instance_ids        = module.compute.application_instances
-  alb_security_group_ids  = [ module.sg.sg_ids["alb-sg"] ]  # "alb-sg" must be defined in security groups
-  app_port                = 80
-  common_tags             = var.common_tags
+  source                 = "./modules/alb"
+  vpc_id                 = var.vpc_id
+  subnets                = var.private_subnets  # internal ALB uses private subnets
+  applications           = var.applications
+  app_instance_ids       = module.compute.application_instances
+  alb_security_group_ids = [ module.sg.sg_ids["alb-sg"] ]
+  app_port               = var.app_port
+  common_tags            = var.common_tags
 }
 
 # EFS Module
