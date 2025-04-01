@@ -160,3 +160,11 @@ variable "security_groups" {
     }))
   }))
 }
+
+variable "app_port" {
+  description = "Port on which the application servers and ALB listener run"
+  type        = number
+  default     = 80
+}
+
+
