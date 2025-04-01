@@ -124,7 +124,7 @@ rds_mysql = {
 # Backup & Observability (Production Only)
 backup_and_observability = {
   enable_backup         = true
-  backup_schedule       = "cron(0 12 * * ? *)"  # daily backup at 12 UTC
+  backup_schedule       = "cron(0 12 * * ? *)"  # Daily backup at 12 UTC
   backup_retention_days = 7
   enable_vpc_flow_logs  = true
 }
