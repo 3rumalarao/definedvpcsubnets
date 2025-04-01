@@ -1,0 +1,175 @@
+Below is a sample runbook that explains the complete Terraform project, including the folder structure, each module’s purpose, and details on how the modules are executed during a Terraform run.
+
+---
+
+# Terraform Project Runbook
+
+## Overview
+
+This Terraform project provisions an AWS infrastructure based on the following requirements:
+
+- **Compute Resources:**  
+  - **Private Servers:** EC2 instances created in a dynamically selected private subnet.
+  - **Application Servers:** EC2 instances for 3 applications, spread across 2 Availability Zones (AZs). Each application has two instances (one per AZ) and is fronted by an internal ALB with Route 53 DNS.
+  - **Public Instances:** EC2 instances created in a dynamically selected public subnet.
+  
+- **Additional Services:**  
+  - **EFS:** An Elastic File System configured with dynamic mount points.
+  - **RDS MySQL:** A production-only RDS MySQL instance with daily snapshot retention.
+  - **Backup & Observability:** AWS Backup and VPC Flow Logs for production monitoring.
+
+- **Security Groups:**  
+  - Security groups are created in a dedicated module. Each resource can reference multiple security groups defined in a separate auto-loaded file.
+
+- **Environment Separation:**  
+  - The infrastructure supports multiple environments (dev, qa, uat, prod) with environment-specific variable files.
+
+## Folder Structure
+
+```plaintext
+terraform-project/
+├── main.tf                   # Root module that calls all submodules
+├── variables.tf              # Global variable definitions for the project
+├── outputs.tf                # Global outputs from the root module
+├── terraform.tfvars          # Core environment and resource variables (auto-loaded)
+├── security_groups.auto.tfvars  # Security group definitions (auto-loaded)
+├── environments/             # (Optional) Additional environment-specific variable files
+│   ├── dev.tfvars
+│   ├── qa.tfvars
+│   ├── uat.tfvars
+│   └── prod.tfvars
+└── modules/                  # Directory containing all reusable Terraform modules
+    ├── compute/              # Module for EC2 instances (private, application, public)
+    │   ├── main.tf           # EC2 instance resources creation
+    │   ├── variables.tf      # Module-specific variables for compute resources
+    │   └── outputs.tf        # Outputs for the compute module (instance IDs, etc.)
+    ├── efs/                  # Module for EFS file system and mount targets
+    │   ├── main.tf           # EFS resources creation
+    │   ├── variables.tf      # EFS module-specific variables
+    │   └── outputs.tf        # EFS resource outputs (file system ID, etc.)
+    ├── rds/                  # Module for RDS MySQL instance (Production Only)
+    │   ├── main.tf           # RDS instance and subnet group creation
+    │   ├── variables.tf      # Variables for RDS configuration (including credentials)
+    │   └── outputs.tf        # Outputs such as the RDS endpoint
+    ├── backup/               # Module for AWS Backup & Observability configuration (Production Only)
+    │   ├── main.tf           # Backup vault and plan creation
+    │   ├── variables.tf      # Backup and observability variables
+    │   └── outputs.tf        # Outputs for backup plan ID, etc.
+    └── sg/                   # Module for creating Security Groups
+        ├── main.tf           # Security group resource definitions using dynamic blocks
+        ├── variables.tf      # Variables defining each security group’s ingress and egress rules
+        └── outputs.tf        # Outputs a mapping of SG names to their AWS-generated IDs
+```
+
+## Detailed Module Descriptions
+
+### 1. **Root Module**
+- **main.tf:**  
+  - Sets the required provider (AWS) and region.
+  - Calls each submodule (SG, Compute, EFS, RDS, Backup) with the appropriate variables.
+  - Combines all module outputs into global outputs.
+
+- **variables.tf & outputs.tf:**  
+  - Define global variables (e.g., region, environment, VPC ID, subnet lists) used across modules.
+  - Expose outputs from submodules (e.g., compute instances, EFS file system ID, RDS endpoint).
+
+### 2. **Compute Module (modules/compute)**
+- **Purpose:**  
+  - Creates three categories of EC2 instances:
+    - **Private Servers:** Deployed in a single, dynamically selected private subnet.
+    - **Application Servers:** Two instances per application (one per AZ), spread over two private subnets.
+    - **Public Instances:** Deployed in a single, dynamically selected public subnet and assigned public IPs.
+    
+- **Implementation Details:**  
+  - Uses `for_each` to iterate over the maps defined in `terraform.tfvars` for private servers and public instances.
+  - Uses `count` with each application’s map to create two instances per application.
+  - References security groups through the variable `vpc_security_group_ids` (output from the SG module), enabling each instance to attach multiple security groups.
+  - Attaches an optional common IAM role if provided.
+
+### 3. **EFS Module (modules/efs)**
+- **Purpose:**  
+  - Provisions an Elastic File System with encryption and general-purpose performance mode.
+  - Creates EFS mount targets in each private subnet.
+  
+- **Implementation Details:**  
+  - The file system is tagged with the environment name.
+  - For each private subnet provided, a mount target is created with the specified security groups for EFS access.
+  
+### 4. **RDS Module (modules/rds)**
+- **Purpose:**  
+  - Creates an RDS MySQL instance (production only) within the provided private subnets.
+  - Configures a subnet group and associates required security groups.
+  - Enables daily snapshots with a retention policy.
+  
+- **Implementation Details:**  
+  - Uses a count (set to 1 if enabled) to create the instance conditionally.
+  - Credentials (username and password) are securely passed.
+  - The DB instance is tagged with environment-specific naming.
+
+### 5. **Backup Module (modules/backup)**
+- **Purpose:**  
+  - Sets up AWS Backup vaults and backup plans for production resources.
+  - Optionally enables VPC Flow Logs for enhanced observability.
+  
+- **Implementation Details:**  
+  - Creates a backup vault named after the environment.
+  - Configures a backup plan with a schedule (using cron expressions) and retention period.
+  
+### 6. **Security Groups Module (modules/sg)**
+- **Purpose:**  
+  - Creates security groups dynamically based on a map of definitions provided in the auto-loaded variable file (`security_groups.auto.tfvars`).
+  - Each security group can include multiple ingress and egress rules.
+  
+- **Implementation Details:**  
+  - Uses `for_each` and dynamic blocks for `ingress` and `egress` rules.
+  - Outputs a mapping of security group names to their AWS-generated IDs.
+  - This mapping (`vpc_security_group_ids`) is referenced by the Compute module for attaching SGs to EC2 instances.
+
+## Auto-Loaded Variable Files
+
+- **terraform.tfvars:**  
+  - Contains core environment settings, VPC and subnet details, compute resource definitions, and additional service configurations.
+  - Defines maps for `private_servers`, `applications`, and `public_instances` with each resource referencing a list of security group names.
+
+- **security_groups.auto.tfvars:**  
+  - Contains the complete definitions of each security group (name, description, ingress, and egress rules).
+  - Terraform Cloud/Enterprise automatically loads this file during runs, so you don’t have to pass multiple var-files manually.
+
+## Execution Flow
+
+1. **Initialization:**  
+   - Run `terraform init` to initialize the provider and modules.
+   - Terraform Cloud/Enterprise auto-loads any `*.auto.tfvars` files along with the main tfvars file.
+
+2. **Plan:**  
+   - Run `terraform plan` to see the proposed changes.
+   - The plan will show the creation of security groups, EC2 instances (in private, public, and application roles), the EFS file system and mount targets, RDS MySQL instance (if enabled), and the backup plan.
+
+3. **Apply:**  
+   - Run `terraform apply` to execute the plan.
+   - Terraform provisions resources in the order specified by module dependencies (security groups are created first, followed by compute resources and additional services).
+
+4. **Outputs:**  
+   - After apply, outputs are displayed as defined in the root module’s `outputs.tf` (e.g., compute instances, EFS file system ID, RDS endpoint, backup plan ID).
+
+## How to Use This Runbook
+
+- **For New Environments:**  
+  - Create a new environment-specific tfvars file under the `environments/` folder.
+  - Adjust variables as needed (e.g., domain names, subnet IDs).
+
+- **For Updating Security Groups:**  
+  - Modify the `security_groups.auto.tfvars` file to update ingress/egress rules.
+  - The SG module will automatically recreate or update security groups based on changes.
+
+- **For Debugging:**  
+  - Use `terraform plan` to review proposed changes.
+  - Review module outputs and logs on Terraform Cloud/Enterprise to verify resource creation order.
+
+- **For Maintenance:**  
+  - Follow the modular structure to update or add functionality without affecting the entire codebase.
+  - Use version control to track changes in each module.
+
+---
+
+This runbook provides a detailed explanation of the project’s modules, folder structure, and execution flow. It should serve as a guide for both new team members and for ongoing maintenance of the Terraform infrastructure.
