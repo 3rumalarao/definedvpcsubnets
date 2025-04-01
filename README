@@ -2,31 +2,35 @@ terraform-project/
 ├── main.tf
 ├── variables.tf
 ├── outputs.tf
-├── terraform.tfvars
-├── security_groups.auto.tfvars
-├── environments/                # (Optional: Environment-specific variables)
+├── terraform.tfvars                  # Core variables (auto-loaded)
+├── security_groups.auto.tfvars       # Security Group definitions (auto-loaded)
+├── environments/                     # (Optional) Environment-specific tfvars
 │   ├── dev.tfvars
 │   ├── qa.tfvars
 │   ├── uat.tfvars
 │   └── prod.tfvars
 └── modules/
-    ├── compute/
+    ├── compute/                     # Module for EC2 instances (private, application, public)
     │   ├── main.tf
     │   ├── variables.tf
     │   └── outputs.tf
-    ├── efs/
+    ├── efs/                         # Module for EFS filesystem and mount targets
     │   ├── main.tf
     │   ├── variables.tf
     │   └── outputs.tf
-    ├── rds/
+    ├── rds/                         # Module for RDS MySQL instance (production only)
     │   ├── main.tf
     │   ├── variables.tf
     │   └── outputs.tf
-    ├── backup/
+    ├── backup/                      # Module for AWS Backup & Observability (production only)
     │   ├── main.tf
     │   ├── variables.tf
     │   └── outputs.tf
-    └── sg/
+    ├── sg/                          # Module for Security Groups
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    └── alb/                         # Module for Application Load Balancers (internal)
         ├── main.tf
         ├── variables.tf
         └── outputs.tf
