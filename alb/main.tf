@@ -39,22 +39,23 @@ resource "aws_lb_target_group" "this" {
 }
 
 locals {
-  # Flatten the application instances mapping into a list of attachments.
+  # Flatten the mapping of application instance IDs.
   attachment_targets = flatten([
     for app, ids in var.app_instance_ids : [
-      for id in ids : {
-        app_name    = app,
-        instance_id = id
+      for idx, id in ids : {
+         app_name    = app,
+         index       = idx,  // static, known at plan time
+         instance_id = id    // computed value, but not used in the key
       }
     ]
   ])
 }
 
-# Attach each application instance to its target group.
 resource "aws_lb_target_group_attachment" "this" {
-  for_each = { for t in local.attachment_targets : "${t.app_name}-${t.instance_id}" => t }
+  for_each = { for t in local.attachment_targets : "${t.app_name}-${t.index}" => t }
 
   target_group_arn = aws_lb_target_group.this[each.value.app_name].arn
   target_id        = each.value.instance_id
   port             = var.app_port
 }
+
