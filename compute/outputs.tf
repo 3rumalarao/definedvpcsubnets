@@ -8,8 +8,9 @@ output "instances" {
 
 output "application_instances" {
   description = "Mapping of application name to list of instance IDs"
-  value = {
+  value       = {
     for app in keys(var.applications) : app =>
       [ for key, inst in aws_instance.applications : inst.id if startswith(key, app) ]
   }
 }
+
